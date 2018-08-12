@@ -12,7 +12,7 @@ ENV['VAGRANT_DEFAULT_PROVIDER'] = 'virtualbox'
 # SCRIPT to install Services on the vm.box
 # sample script to install appache service on the box
 $samplescript = <<SCRIPT
-	yum install -y httpd
+	sudo yum install -y httpd
 	systemctl enable httpd
 	systemctl start httpd
 SCRIPT
@@ -100,25 +100,40 @@ Vagrant.configure("2") do |config|
 	# this is the default (primary) machine !!
 	config.vm.define "srv1", primary: true do |srv1|
 		srv1.vm.box = "centos/7"
-		srv1.vm.hostname = "vagcentos7"	
-	
-		# a private network ip address
-		# srv1.vm.network "private_network", ip: "192.168.50.10"
-	
+		srv1.vm.hostname = "vagcentos7web"	
+		
+		srv1.vm.network "private_network", ip: "192.168.50.10"	# define private network interface
+		# srv1.vm.network "public_network", ip: "10.0.0.111"		# define public network interface
+		# srv1.vm.network "public_network", bridge: "en1: Wi-Fi (SSID_xxxx)" # define bridge network as a WIFI
+		# srv1.vm.network "public_network", auto_config: false		# network interface with out IP and without NAT
+		srv1.vm.network "forwarded_port",guest:80, host:8080		# forwarding all traffic from port 8080 to port 80
+		#
 		# srv1.vm.synced_folder "src/", "/var/www/html"
 	
 		# SCRIPT installing Service
-		# srv1.vm.provision "shell", inline: $samplescript
+		srv1.vm.provision "shell", inline: $samplescript
+		# srv1.vm.provision "shell", path:"<script_file_name>"
 	
 		srv1.vm.post_up_message = "vm.box centos/7 as vagcentos7 is setup!"
 	end
 	
-	# Customize the VirtualBox vm.box srv1 <<
+	# Customize the VirtualBox vm.box srv2 <<
 	#
 	config.vm.define "srv2" do |srv2|
 		srv2.vm.box = "ubuntu/trusty64"
-		srv2.vm.hostname = "vagubuntusrv1"	
-		srv2.vm.post_up_message = "vm.box ubuntu/trusty64 as vagubuntu_srv1 is setup!"
+		srv2.vm.hostname = "vagubuntusrv2"	
+		srv2.vm.network "private_network", ip: "192.168.150.10"	# define private network interface
+		srv2.vm.post_up_message = "vm.box ubuntu/trusty64 as vagubuntu_srv2 is setup!"
 	end
-  	
-end
+	
+	# Customize the VirtualBox vm.box srv3 <<
+	#
+	config.vm.define "srv3" do |srv3|
+		srv3.vm.box = "centos/7"
+		srv3.vm.hostname = "centosgwsrv3"
+		srv3.vm.network "private_network", ip: "10.0.4.10", netmask: "255.255.252.0"	# define private network interface
+		srv3.vm.provision "shell", path:"installinghttpd.sh"
+		srv3.vm.post_up_message = "vm.box centos/7 as vagcentosgwsrv3 is setup!"
+#		srv3.vm.provision "shell", inline: $samplescript
+	end
+end	
